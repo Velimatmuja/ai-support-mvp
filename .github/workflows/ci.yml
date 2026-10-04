@@ -1,0 +1,31 @@
+# Testet e rënda (Postgres + PostgREST + build) bëhen këtu, jo në telefon.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Postgres në PATH (i parainstaluar në runner)
+        run: echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      - name: RLS / izolimi i tenant-ëve
+        run: pnpm test:db
+      - name: Instalo PostgREST
+        run: curl -sSL https://github.com/PostgREST/postgrest/releases/download/v13.0.8/postgrest-v13.0.8-linux-static-x86-64.tar.xz | sudo tar -xJ -C /usr/local/bin
+      - name: End-to-end (API reale, shërbime të jashtme të imituara)
+        run: pnpm test:e2e
+      - run: pnpm build

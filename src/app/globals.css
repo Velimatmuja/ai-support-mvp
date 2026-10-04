@@ -1,0 +1,605 @@
+/* Paneli SupportBot. Fonte të sistemit me qëllim: pronarët e bizneseve e hapin nga
+   telefona të lirë dhe rrjete të ngadalta — asnjë font për t'u shkarkuar.
+   E vetmja ngjyrë "e fortë" (qelibar) është për bisedat që presin njeriun. */
+:root {
+  --paper: #f4f6f3;
+  --surface: #ffffff;
+  --ink: #17221f;
+  --muted: #5c6b66;
+  --line: #d8ded9;
+  --brand: #0e6b5c;
+  --brand-dark: #0a5247;
+  --wait-bar: #e08a00;
+  --wait-bg: #fff1cc;
+  --wait-ink: #7a3b00;
+  --danger: #b42318;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 {
+  font-size: 1.625rem;
+  line-height: 1.2;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.125rem;
+  line-height: 1.3;
+  margin: 0 0 6px;
+}
+
+p {
+  margin: 0 0 12px;
+}
+
+a {
+  color: var(--brand);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.875rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---------- Format ---------- */
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin: 14px 0 4px;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+select,
+textarea {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid #aab5af;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+input[type='color'] {
+  width: 56px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid #aab5af;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background: var(--brand-dark);
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn.quiet {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: #aab5af;
+}
+
+.btn.quiet:hover {
+  background: var(--paper);
+}
+
+.btn.danger {
+  color: var(--danger);
+  background: var(--surface);
+  border-color: #e4b4ae;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.notice {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.notice.error {
+  color: var(--danger);
+  border-color: #e4b4ae;
+  background: #fdf3f2;
+}
+
+.notice.ok {
+  color: var(--brand-dark);
+  border-color: #b5d6cf;
+  background: #eef7f5;
+}
+
+.notice.wait {
+  color: var(--wait-ink);
+  border-color: #f0cf85;
+  background: var(--wait-bg);
+}
+
+/* ---------- Hyrja / regjistrimi ---------- */
+.auth {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 56px 20px 40px;
+}
+
+.auth .brandmark {
+  font-weight: 700;
+  color: var(--brand);
+  margin-bottom: 28px;
+}
+
+.auth .btn {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.auth .links {
+  margin-top: 20px;
+  font-size: 0.9375rem;
+}
+
+/* ---------- Korniza e panelit ----------
+   Kolonë me lartësinë e ekranit: shiriti lart, përmbajtja që rrëshqet, navigimi poshtë
+   (te gishti i madh në celular). Asgjë nuk fshihet pas navigimit. */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  order: 1;
+}
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar .business {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav {
+  flex: none;
+  order: 2;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.nav a {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-top: 3px solid transparent;
+}
+
+.nav a[aria-current='page'] {
+  color: var(--brand);
+  border-top-color: var(--brand);
+}
+
+.nav .count {
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--wait-bar);
+  color: #2b1600;
+  font-size: 0.8125rem;
+  line-height: 22px;
+  text-align: center;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+}
+
+.section {
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+}
+
+.section:first-of-type {
+  border-top: 0;
+  padding-top: 8px;
+}
+
+/* ---------- Bisedat ---------- */
+.inbox {
+  height: 100%;
+}
+
+.inbox .list {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.inbox.has-thread .list {
+  display: none;
+}
+
+.inbox .thread {
+  display: none;
+}
+
+.inbox.has-thread .thread {
+  display: flex;
+}
+
+.group-title {
+  padding: 14px 16px 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--paper);
+}
+
+.group-title.wait {
+  color: var(--wait-ink);
+}
+
+.conv {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-left: 5px solid transparent;
+  padding: 12px 16px 12px 11px;
+  cursor: pointer;
+}
+
+.conv:hover {
+  background: #fafbfa;
+}
+
+.conv.wait {
+  border-left-color: var(--wait-bar);
+  background: #fffaf0;
+}
+
+.conv[aria-current='true'] {
+  background: #eef7f5;
+}
+
+.conv .who {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.conv .when {
+  flex: none;
+  font-weight: 400;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.conv .preview {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 32px 20px;
+  color: var(--muted);
+  max-width: 46ch;
+}
+
+.thread {
+  flex-direction: column;
+  height: 100%;
+  background: var(--paper);
+}
+
+.thread-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.thread-head .title {
+  flex: 1;
+  min-width: 0;
+}
+
+.thread-head .name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thread-head .btn,
+.thread-status .btn {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.875rem;
+}
+
+.thread-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.thread-status.wait {
+  color: var(--wait-ink);
+  background: var(--wait-bg);
+  border-bottom-color: #f0cf85;
+}
+
+.msgs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.msg {
+  max-width: 82%;
+  padding: 9px 12px;
+  border-radius: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.msg .by {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* klienti majtas; asistenti dhe ti djathtas */
+.msg.assistant,
+.msg.agent {
+  align-self: flex-end;
+}
+
+.msg.agent {
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.msg.agent .by {
+  color: #cfe7e2;
+}
+
+.composer {
+  flex: none;
+  padding: 10px 16px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.composer .line {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.composer textarea {
+  flex: 1;
+  min-height: 44px;
+  height: 64px;
+}
+
+/* ---------- Njohuritë / cilësimet ---------- */
+.doc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc .name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.snippet {
+  display: block;
+  margin: 8px 0;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+  background: var(--ink);
+  color: #e8efed;
+  border-radius: var(--radius);
+}
+
+.meter {
+  height: 10px;
+  margin: 8px 0;
+  background: var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+}
+
+.meter.full > span {
+  background: var(--wait-bar);
+}
+
+/* ---------- Ekran i gjerë ---------- */
+@media (min-width: 900px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 208px 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .topbar {
+    grid-column: 1 / -1;
+  }
+
+  .content {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .nav {
+    grid-column: 1;
+    grid-row: 2;
+    flex-direction: column;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+    padding-top: 12px;
+  }
+
+  .nav a {
+    flex: none;
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 0 20px;
+    border-top: 0;
+    border-left: 3px solid transparent;
+  }
+
+  .nav a[aria-current='page'] {
+    border-left-color: var(--brand);
+    background: #eef7f5;
+  }
+
+  .inbox,
+  .inbox.has-thread {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+  }
+
+  .inbox .list,
+  .inbox.has-thread .list {
+    display: block;
+    border-right: 1px solid var(--line);
+  }
+
+  .inbox .thread,
+  .inbox.has-thread .thread {
+    display: flex;
+    min-height: 0;
+  }
+
+  .thread-head .back {
+    display: none;
+  }
+}

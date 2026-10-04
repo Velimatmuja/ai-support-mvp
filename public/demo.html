@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>SupportBot — demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; line-height: 1.5; color: #111827; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Faqe demo</h1>
+  <p id="info">Hape me <code>?key=wk_...</code> në URL për të provuar widget-in e një tenant-i.</p>
+  <script>
+    // Faqe prove: e merr widget_key nga URL dhe fut të njëjtin tag që përdor një klient.
+    var key = new URLSearchParams(location.search).get('key');
+    if (/^wk_[a-f0-9]{32}$/.test(key || '')) {
+      var s = document.createElement('script');
+      s.src = '/widget.js';
+      s.setAttribute('data-key', key);
+      document.body.appendChild(s);
+      document.getElementById('info').textContent = 'Widget-i është ngarkuar: kliko flluskën poshtë djathtas.';
+    }
+  </script>
+</body>
+</html>
