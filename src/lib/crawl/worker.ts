@@ -45,6 +45,7 @@ export type CrawlJob = {
   chunks_reused: number;
   embedding_tokens: number;
   truncated: boolean;
+  incomplete: boolean;
   robots_txt: string | null;
   crawl_delay_ms: number;
   boilerplate: string[];
@@ -82,7 +83,7 @@ type Extracted = {
 
 const COUNTERS = [
   'pages_discovered', 'pages_processed', 'pages_failed', 'pages_skipped', 'pages_unchanged', 'pages_indexed',
-  'pages_deleted', 'chunks_embedded', 'chunks_reused', 'embedding_tokens', 'truncated',
+  'pages_deleted', 'chunks_embedded', 'chunks_reused', 'embedding_tokens', 'truncated', 'incomplete',
 ] as const;
 
 const MAX_JOB_ATTEMPTS = 5;
@@ -233,7 +234,7 @@ async function seed(ctx: JobContext): Promise<void> {
   const root = normalizeUrl(source.root_url)!;
   await ctx.enqueue([root], 0, false);
   await ctx.enqueue(found.sitemapUrls, 0, true);
-  if (found.incomplete) job.truncated = true;
+  if (found.incomplete) job.incomplete = true;
   await ctx.save({ robots_txt: robotsText, crawl_delay_ms: job.crawl_delay_ms });
   await ctx.event(
     found.incomplete ? 'warn' : 'info',
@@ -588,7 +589,7 @@ async function finalize(ctx: JobContext): Promise<void> {
   const ok = job.pages_indexed + job.pages_unchanged > 0;
   const unhealthy = job.pages_failed > 0.5 * (job.pages_processed + job.pages_failed);
   if (unhealthy && ok) await ctx.event('warn', 'deletions_skipped', `failed=${job.pages_failed}`);
-  if (!job.truncated && ok && !unhealthy) {
+  if (!job.truncated && !job.incomplete && ok && !unhealthy) {
     const { data: docs, error } = await db
       .from('documents')
       .select('id, last_seen_job_id')

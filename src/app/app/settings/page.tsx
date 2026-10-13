@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../../../lib/supabase/browser.ts';
-import { ApiCallError, apiPost } from '../../../lib/ui/api.ts';
+import { ApiCallError, apiPost, apiRequest } from '../../../lib/ui/api.ts';
 import { useApp } from '../../../lib/ui/app-context.ts';
 import { useStrings } from '../../../lib/ui/strings.ts';
 
 type ChannelRow = { id: string; display_name: string | null; status: string };
+type KeyRow = { id: string; name: string; prefix: string; last_used_at: string | null; revoked_at: string | null };
 
 export default function SettingsPage() {
   const { t, locale } = useStrings();
@@ -23,6 +24,8 @@ export default function SettingsPage() {
   const [color, setColor] = useState(settings.color ?? '#2563eb');
   const [language, setLanguage] = useState(settings.language === 'sq' ? 'sq' : 'en');
   const [tone, setTone] = useState(settings.extra_instructions ?? '');
+  const [answerPolicy, setAnswerPolicy] = useState(settings.answer_policy === 'general' ? 'general' : 'strict');
+  const [keys, setKeys] = useState<KeyRow[]>([]);
   const [botNotice, setBotNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
   const [origins, setOrigins] = useState(tenant.allowed_origins.join('\n'));
@@ -39,12 +42,15 @@ export default function SettingsPage() {
     const client = supabase();
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const [channels, usage] = await Promise.all([
+    const [channels, usage, apiKeys] = await Promise.all([
       client.from('channels').select('id, display_name, status').eq('type', 'telegram').order('created_at'),
       // I njëjti numërim që përdor serveri për kuotën (usage_events, muaji kalendarik UTC).
       client.from('usage_events').select('id', { count: 'exact', head: true }).eq('event_type', 'ai_reply').gte('created_at', monthStart),
+      // RLS + grant-et e kolonave: emri dhe prefiksi, kurrë hash-i i çelësit.
+      client.from('api_keys').select('id, name, prefix, last_used_at, revoked_at').order('created_at', { ascending: false }),
     ]);
     setBots((channels.data ?? []) as ChannelRow[]);
+    setKeys((apiKeys.data ?? []) as KeyRow[]);
     setUsed(usage.count ?? 0);
   }, []);
 
@@ -81,6 +87,7 @@ export default function SettingsPage() {
           color,
           language,
           extra_instructions: tone.trim(),
+          answer_policy: answerPolicy,
         },
       })
       .eq('id', tenant.id);
@@ -201,6 +208,11 @@ export default function SettingsPage() {
           <label htmlFor="tone">{t('tone')}</label>
           <textarea id="tone" rows={3} maxLength={1000} aria-describedby="tone-hint" value={tone} onChange={(e) => setTone(e.target.value)} />
           <p id="tone-hint" className="muted small">{t('toneHint')}</p>
+          <label htmlFor="answer-policy">{t('answerPolicy')}</label>
+          <select id="answer-policy" value={answerPolicy} onChange={(e) => setAnswerPolicy(e.target.value === 'general' ? 'general' : 'strict')}>
+            <option value="strict">{t('answerStrict')}</option>
+            <option value="general">{t('answerGeneral')}</option>
+          </select>
           {botNotice ? <p className={botNotice.ok ? 'notice ok' : 'notice error'} role="status">{botNotice.text}</p> : null}
           <div className="row" style={{ marginTop: 12 }}>
             <button className="btn" type="submit" disabled={busy}>{t('save')}</button>
@@ -224,6 +236,38 @@ export default function SettingsPage() {
             <button className="btn" type="submit" disabled={busy}>{t('connect')}</button>
           </div>
         </form>
+      </section>
+
+      <section className="section">
+        <h2>{t('keysTitle')}</h2>
+        <p className="muted">{t('keysLead')}</p>
+        {keys.length === 0 ? <p className="muted small">{t('keysEmpty')}</p> : null}
+        {keys.map((key) => (
+          <div key={key.id} className="doc">
+            <div>
+              <div className="name">{key.name}</div>
+              <div className="muted small">
+                <code>{key.prefix}…</code> · {t('lastUsed')}: {key.last_used_at ? new Date(key.last_used_at).toLocaleString(locale) : t('never')}
+              </div>
+            </div>
+            {key.revoked_at ? (
+              <span className="muted small">{t('revokedOn')}</span>
+            ) : (
+              <button
+                type="button"
+                className="btn danger"
+                disabled={busy}
+                onClick={() =>
+                  void apiRequest('DELETE', `/api/keys/${key.id}`)
+                    .catch(() => undefined)
+                    .then(loadSide)
+                }
+              >
+                {t('revoke')}
+              </button>
+            )}
+          </div>
+        ))}
       </section>
 
       <section className="section">

@@ -11,7 +11,8 @@ import { calls, startMocks, userJwt, USERS } from './mocks.ts';
 const REST_PORT = Number(process.env.E2E_REST_PORT);
 const MOCK_PORT = 54341;
 const APP_PORT = 54342;
-const SITE_PORT = 54343;
+const SITE_PORT = 54345;
+const WP_PORT = 54346;
 const MOCK = `http://127.0.0.1:${MOCK_PORT}`;
 const APP = `http://127.0.0.1:${APP_PORT}`;
 
@@ -37,7 +38,7 @@ Object.assign(process.env, {
   APP_URL: APP,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
   // Crawler: host-et e testit drejtohen te serveri lokal (vetëm jashtë production).
-  CRAWLER_DEV_HOST_MAP: JSON.stringify({ 'alba.test': `127.0.0.1:${SITE_PORT}`, 'www.alba.test': `127.0.0.1:${SITE_PORT}`, 'beta.test': `127.0.0.1:${SITE_PORT}` }),
+  CRAWLER_DEV_HOST_MAP: JSON.stringify({ 'alba.test': `127.0.0.1:${SITE_PORT}`, 'www.alba.test': `127.0.0.1:${SITE_PORT}`, 'beta.test': `127.0.0.1:${SITE_PORT}`, 'wp.test': `127.0.0.1:${WP_PORT}` }),
   CRAWLER_MIN_DELAY_MS: '0',
   CRAWLER_TIMEOUT_MS: '1000',
   CRAWLER_MAX_ATTEMPTS: '2',
@@ -546,6 +547,8 @@ await step('RLS përmes Data API: përdoruesi A sheh vetëm të dhënat e veta; 
 {
   const { default: website } = await import('./website.ts');
   await website({ APP, MOCK, A, B, db, call, step, calls, userJwt, USERS, SITE_PORT });
+  const { default: wordpress } = await import('./wordpress.ts');
+  await wordpress({ APP, A, db, call, step, WP_PORT });
 }
 
 if (process.env.E2E_BROWSER) {

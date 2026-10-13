@@ -10,7 +10,7 @@ import { cleanPatterns, inScope, isExcluded, normalizeUrl, siteHost } from '../c
 export const SOURCE_PUBLIC_COLUMNS =
   'id, type, root_url, host, enabled, status, verified_at, verification_token, max_pages, max_depth, exclude_patterns, sync_interval_hours, next_sync_at, last_synced_at, last_job_id, created_at';
 export const JOB_PUBLIC_COLUMNS =
-  'id, source_id, trigger, status, max_pages, max_depth, pages_discovered, pages_processed, pages_failed, pages_skipped, pages_unchanged, pages_indexed, pages_deleted, chunks_embedded, chunks_reused, embedding_tokens, truncated, attempts, error, started_at, finished_at, created_at';
+  'id, source_id, trigger, status, max_pages, max_depth, pages_discovered, pages_processed, pages_failed, pages_skipped, pages_unchanged, pages_indexed, pages_deleted, chunks_embedded, chunks_reused, embedding_tokens, truncated, incomplete, attempts, error, started_at, finished_at, created_at';
 
 export const VERIFICATION_META = 'anesp-site-verification';
 export const VERIFICATION_PATH = '/.well-known/anesp-verification.txt';

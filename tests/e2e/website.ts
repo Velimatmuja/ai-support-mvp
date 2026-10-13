@@ -405,6 +405,8 @@ export default async function website(ctx: Ctx): Promise<void> {
     const retry = await call('POST', `/api/kb/sources/${sourceA}/retry`, { token: keyA });
     assert.equal(retry.status, 200, JSON.stringify(retry.data));
     assert.equal(retry.data.id, failed.id, 'i njëjti job rifillon');
+    assert.equal(retry.data.incomplete, true, 'sitemap-i ishte i paarritshëm');
+    assert.equal(retry.data.truncated, false);
     assert.equal((await call('POST', `/api/kb/sources/${sourceA}/retry`, { token: keyA })).status, 409, 'job aktiv');
     const done = await crawlUntilDone(sourceA);
     assert.equal(done.status, 'ready', JSON.stringify(done));

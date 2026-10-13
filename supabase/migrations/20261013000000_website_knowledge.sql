@@ -119,7 +119,10 @@ create table public.crawl_jobs (
   chunks_embedded    integer not null default 0,
   chunks_reused      integer not null default 0,
   embedding_tokens   integer not null default 0,
+  -- truncated: u arrit max_pages ose kufiri i chunks. incomplete: një sitemap nuk u
+  -- lexua dot. Në të dyja rastet crawl-i nuk fshin faqet që nuk i pa.
   truncated          boolean not null default false,
+  incomplete         boolean not null default false,
   -- robots.txt i lexuar një herë për job (teksti i papërpunuar, i kufizuar).
   robots_txt         text check (char_length(robots_txt) <= 100000),
   crawl_delay_ms     integer not null default 0,
@@ -244,7 +247,7 @@ from public, anon, authenticated;
 grant select on public.knowledge_sources to authenticated;
 grant select (id, tenant_id, source_id, trigger, status, max_pages, max_depth, pages_discovered,
               pages_processed, pages_failed, pages_skipped, pages_unchanged, pages_indexed,
-              pages_deleted, chunks_embedded, chunks_reused, embedding_tokens, truncated,
+              pages_deleted, chunks_embedded, chunks_reused, embedding_tokens, truncated, incomplete,
               attempts, error, started_at, finished_at, created_at)
   on public.crawl_jobs to authenticated;
 grant select on public.crawl_job_events to authenticated;
