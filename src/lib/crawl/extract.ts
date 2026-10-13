@@ -109,10 +109,27 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
   let contentCur = '';
   let sawContent = false;
 
-  // Stack i elementeve të hapura: [tag, skip, content]
+  // Stack i elementeve të hapura. Numëruesit (jo stack.some) mbajnë çdo hap O(1):
+  // një faqe me 200k <div> të futura njëra brenda tjetrës nuk e bën nxjerrjen kuadratike.
+  const MAX_DEPTH = 2000;
   const stack: { tag: string; skip: boolean; content: boolean }[] = [];
-  const skipping = () => stack.some((e) => e.skip);
-  const inContent = () => stack.some((e) => e.content);
+  let skipCount = 0;
+  let contentCount = 0;
+  const skipping = () => skipCount > 0;
+  const inContent = () => contentCount > 0;
+  const push = (e: { tag: string; skip: boolean; content: boolean }) => {
+    if (stack.length >= MAX_DEPTH) return;
+    stack.push(e);
+    if (e.skip) skipCount++;
+    if (e.content) contentCount++;
+  };
+  const popTo = (idx: number) => {
+    while (stack.length > idx) {
+      const e = stack.pop()!;
+      if (e.skip) skipCount--;
+      if (e.content) contentCount--;
+    }
+  };
 
   const flush = () => {
     const a = clean(allCur);
@@ -128,7 +145,10 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
     if (inContent()) contentCur += text;
   };
 
-  const re = /<!--[\s\S]*?(?:-->|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>|$)|<![^>]*>?|<\?[^>]*>?|<\/\s*([a-zA-Z][\w:-]*)\s*>|<([a-zA-Z][\w:-]*)((?:"[^"]*"|'[^']*'|[^'">])*)>|[^<]+|</g;
+  // Kuantifikues të kufizuar: një faqe armiqësore me mijëra "<a" pa ">" nuk e kthen
+  // tokenizer-in në kohë kuadratike (çdo provë skanon të shumtën disa mijëra karaktere).
+  const re = /<!--[\s\S]*?(?:-->|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>|$)|<![^>]{0,2000}>?|<\?[^>]{0,2000}>?|<\/\s{0,10}([a-zA-Z][\w:-]{0,60})\s{0,10}>|<([a-zA-Z][\w:-]{0,60})((?:"[^"]{0,4000}"|'[^']{0,4000}'|[^'">]){0,256})>|[^<]+|</g;
+  const lower = html.toLowerCase();
   let m: RegExpExecArray | null;
   let currentText: 'title' | 'h1' | null = null;
 
@@ -159,10 +179,8 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
 
       if (RAW_TEXT.has(tag) && !(selfClosing && tag !== 'script' && tag !== 'style')) {
         // Kalo direkt te etiketa mbyllëse; asgjë brenda nuk është tekst i faqes.
-        const close = new RegExp(`</\\s*${tag}\\s*>`, 'i');
-        const rest = html.slice(re.lastIndex);
-        const end = rest.search(close);
-        re.lastIndex = end === -1 ? html.length : re.lastIndex + end + (close.exec(rest)?.[0].length ?? 0);
+        const end = lower.indexOf(`</${tag}`, re.lastIndex);
+        re.lastIndex = end === -1 ? html.length : Math.max(lower.indexOf('>', end) + 1, end + tag.length + 2);
         continue;
       }
       if (tag === 'title') {
@@ -182,7 +200,7 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
       const contentRoot = tag === 'main' || tag === 'article' || (a.role || '').toLowerCase() === 'main';
       const skip = isHidden(tag, a) || isBoilerplate(tag, a, inContent() || contentRoot);
       if (BLOCK.has(tag)) flush();
-      stack.push({ tag, skip, content: contentRoot && !skip });
+      push({ tag, skip, content: contentRoot && !skip });
       if (contentRoot && !skip) sawContent = true;
       if (tag === 'li' && !skipping()) addText('- ');
       continue;
@@ -192,10 +210,17 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
       // Etiketë mbyllëse: mbyll deri te elementi përkatës (HTML i keq toleruhet).
       const tag = m[1].toLowerCase();
       if (tag === 'title' || tag === 'h1') currentText = null;
-      const idx = stack.map((e) => e.tag).lastIndexOf(tag);
+      // Kërkohet vetëm afër majës së stack-ut: etiketat mbyllëse pa çift nuk kushtojnë O(thellësi).
+      let idx = -1;
+      for (let i = stack.length - 1; i >= Math.max(0, stack.length - 64); i--) {
+        if (stack[i]!.tag === tag) {
+          idx = i;
+          break;
+        }
+      }
       if (idx !== -1) {
         if (BLOCK.has(tag)) flush();
-        stack.length = idx;
+        popTo(idx);
       }
       if (tag === 'td' || tag === 'th') addText(' | ');
       continue;

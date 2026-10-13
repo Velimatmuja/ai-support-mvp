@@ -176,3 +176,23 @@ test('gjuha: atributi lang ka përparësi; përndryshe fjalët e shpeshta; e pas
   assert.equal(detectLanguage(en, null), 'en');
   assert.equal(detectLanguage('12345 67890', null), null);
 });
+
+// ----------------------------------------------------------------- ReDoS
+test('HTML dhe sitemap armiqësorë (2 MB) përpunohen në kohë lineare', () => {
+  const cases = [
+    '<p>x</p>' + '<a '.repeat(600_000),
+    '<p>x</p>' + '<a "'.repeat(500_000),
+    '<div>'.repeat(300_000) + 'tekst',
+    '</a'.repeat(500_000),
+    '<!-- '.repeat(300_000),
+  ];
+  for (const html of cases) {
+    const started = Date.now();
+    extractPage(html, 'https://x.com/');
+    assert.ok(Date.now() - started < 8000, `HTML: ${html.slice(0, 12)} mori ${Date.now() - started} ms`);
+  }
+  const started = Date.now();
+  parseSitemap('<urlset>' + '<url> <loc>'.repeat(1_000_000));
+  parseSitemap('<urlset>' + '<url><loc>'.repeat(500_000) + '</loc>');
+  assert.ok(Date.now() - started < 2000, `sitemap mori ${Date.now() - started} ms`);
+});

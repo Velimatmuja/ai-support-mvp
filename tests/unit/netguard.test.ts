@@ -138,3 +138,22 @@ test('safeFetch: kufiri i madhësisë (edhe pas dekompresimit) dhe timeout', asy
 test('safeFetch: pa hostMap, 127.0.0.1 nuk arrihet dot as direkt', async () => {
   assert.equal(await code(safeFetch(`http://127.0.0.1:${port}/ok`, opts({ allowedPorts: [port] }))), 'forbidden_address');
 });
+
+test('CRAWLER_DEV_HOST_MAP (dera e testeve) injorohet në production', async () => {
+  const { crawlerConfig } = await import('../../src/lib/crawl/config.ts');
+  const before = { map: process.env.CRAWLER_DEV_HOST_MAP, env: process.env.NODE_ENV };
+  const silent = console.error;
+  try {
+    process.env.CRAWLER_DEV_HOST_MAP = JSON.stringify({ 'evil.test': '127.0.0.1:80' });
+    (process.env as Record<string, string>).NODE_ENV = 'development';
+    assert.deepEqual(crawlerConfig().net.hostMap, { 'evil.test': '127.0.0.1:80' });
+    (process.env as Record<string, string>).NODE_ENV = 'production';
+    console.error = () => undefined;
+    assert.equal(crawlerConfig().net.hostMap, undefined);
+  } finally {
+    console.error = silent;
+    if (before.map === undefined) delete process.env.CRAWLER_DEV_HOST_MAP;
+    else process.env.CRAWLER_DEV_HOST_MAP = before.map;
+    (process.env as Record<string, string | undefined>).NODE_ENV = before.env;
+  }
+});

@@ -177,7 +177,8 @@ class JobContext {
       const room = this.job.max_pages - this.job.pages_discovered;
       if (room <= 0) {
         // Kontrollo nëse të mbeturat janë vërtet të reja (jo thjesht menuja e përsëritur).
-        const rest = candidates.slice(i, i + 50);
+        // Pak URL për kërkesë: filtri shkon në query string dhe URL-të mund të jenë të gjata.
+        const rest = candidates.slice(i, i + 10);
         const { data } = await this.db.from('crawl_queue').select('url').eq('job_id', this.job.id).in('url', rest);
         if ((data ?? []).length < rest.length) this.job.truncated = true;
         break;
@@ -597,8 +598,8 @@ async function finalize(ctx: JobContext): Promise<void> {
       .eq('tenant_id', job.tenant_id);
     if (error) throw new Error(`stale documents: ${error.message}`);
     const stale = (docs ?? []).filter((d) => d.last_seen_job_id !== job.id).map((d) => d.id as string);
-    for (let i = 0; i < stale.length; i += 200) {
-      const { error: delError } = await db.from('documents').delete().eq('tenant_id', job.tenant_id).in('id', stale.slice(i, i + 200));
+    for (let i = 0; i < stale.length; i += 100) {
+      const { error: delError } = await db.from('documents').delete().eq('tenant_id', job.tenant_id).in('id', stale.slice(i, i + 100));
       if (delError) throw new Error(`delete stale: ${delError.message}`);
     }
     job.pages_deleted = stale.length;

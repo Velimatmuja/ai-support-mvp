@@ -301,8 +301,8 @@ export async function updateSource(tenantId: string, sourceId: string, body: Set
       .eq('source_id', sourceId);
     if (docsError) throw new Error(`documents: ${docsError.message}`);
     const ids = (docs ?? []).filter((d) => isExcluded(d.url as string, patch.exclude_patterns as string[])).map((d) => d.id);
-    for (let i = 0; i < ids.length; i += 200) {
-      const { error: delError } = await db.from('documents').delete().eq('tenant_id', tenantId).in('id', ids.slice(i, i + 200));
+    for (let i = 0; i < ids.length; i += 100) {
+      const { error: delError } = await db.from('documents').delete().eq('tenant_id', tenantId).in('id', ids.slice(i, i + 100));
       if (delError) throw new Error(`delete excluded: ${delError.message}`);
     }
     removed = ids.length;
