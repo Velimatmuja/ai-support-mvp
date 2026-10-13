@@ -4,6 +4,9 @@ export type TenantSettings = {
   color?: string;
   language?: string; // 'sq' | 'en' — gjuha e teksteve të sistemit (jo e përgjigjeve të AI)
   extra_instructions?: string;
+  // 'strict' (default): vetëm nga KB. 'general': lejon përgjigje të përgjithshme të
+  // shënuara qartë si të tilla, kurrë për fakte të biznesit.
+  answer_policy?: 'strict' | 'general';
 };
 
 export type Tenant = {
@@ -30,9 +33,25 @@ export type Conversation = {
   ai_enabled: boolean;
 };
 
+export type Citation = { title: string; url: string };
+
 export type MessageRow = {
   id: number;
   role: 'user' | 'assistant' | 'agent' | 'system';
   content: string;
   created_at: string;
+  // Burimet publike (faqe të website-it) mbi të cilat u bazua përgjigjja e AI.
+  sources?: Citation[];
 };
+
+// Mesazh i ruajtur -> formë për vizitorin: metadata e brendshme (model, trace) nuk del.
+export function publicMessage(row: MessageRow & { metadata?: { citations?: Citation[] } | null }): MessageRow {
+  const sources = row.metadata?.citations;
+  return {
+    id: row.id,
+    role: row.role,
+    content: row.content,
+    created_at: row.created_at,
+    ...(Array.isArray(sources) && sources.length ? { sources } : {}),
+  };
+}

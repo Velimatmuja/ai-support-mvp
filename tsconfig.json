@@ -16,6 +16,7 @@
     "skipLibCheck": true,
     "incremental": true,
     "jsx": "react-jsx",
+    "types": ["node"],
     "plugins": [{ "name": "next" }]
   },
   "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", "tests/unit/**/*.ts", ".next/types/**/*.ts"],

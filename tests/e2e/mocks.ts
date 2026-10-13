@@ -97,12 +97,12 @@ function fakeClaude(body: any): { status: number; data: unknown } {
   const knowledge = /<knowledge>\n([\s\S]*?)\n<\/knowledge>\s*\n\s*<customer_message>\n[\s\S]*$/.exec(last)?.[1] ?? '';
   if (question.includes('FAIL500')) return { status: 500, data: { type: 'error', error: { type: 'api_error', message: 'boom' } } };
 
-  const first = /^\[1\] \((.*?)\)\n([\s\S]*?)(?=\n\n\[2\] |$)/.exec(knowledge);
+  const first = /^<source id="1" title="(.*?)"(?: url="(.*?)")?>\n([\s\S]*?)\n<\/source>/.exec(knowledge);
   let input: Record<string, unknown>;
   if (/human|njeri/i.test(question)) {
     input = { answer: 'A team member will reply here shortly.', needs_human: true, used_sources: [] };
   } else if (first) {
-    input = { answer: `ANSWER: ${first[2]}`, needs_human: false, used_sources: [1, 99] };
+    input = { answer: `ANSWER: ${first[3]}`, needs_human: false, used_sources: [1, 99] };
   } else {
     input = { answer: 'I am passing this to the team.', needs_human: true, used_sources: [] };
   }

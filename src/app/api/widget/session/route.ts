@@ -4,6 +4,8 @@ import { clientIp, errorResponse, json, preflight } from '../../../../lib/errors
 import { localeOf, t } from '../../../../lib/i18n.ts';
 import { enforce } from '../../../../lib/ratelimit.ts';
 import { admin } from '../../../../lib/supabase/admin.ts';
+import { publicMessage } from '../../../../lib/types.ts';
+import type { MessageRow } from '../../../../lib/types.ts';
 import { bearer, tenantForWidget } from '../../../../lib/widget.ts';
 
 export const dynamic = 'force-dynamic';
@@ -37,14 +39,14 @@ export async function GET(req: Request): Promise<Response> {
         status = conv.status;
         const { data, error } = await db
           .from('messages')
-          .select('id, role, content, created_at')
+          .select('id, role, content, created_at, metadata')
           .eq('conversation_id', token.c)
           .eq('tenant_id', tenant.id)
           .neq('role', 'system')
           .order('id', { ascending: false })
           .limit(50);
         if (error) throw new Error(`messages: ${error.message}`);
-        messages = (data ?? []).reverse();
+        messages = ((data ?? []) as MessageRow[]).reverse().map(publicMessage);
       }
     }
 

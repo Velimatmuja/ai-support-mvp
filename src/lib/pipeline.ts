@@ -3,7 +3,8 @@ import { t } from './i18n.ts';
 import { newTraceId, traceReply } from './langfuse.ts';
 import { generateReply } from './rag/generate.ts';
 import { retrieve } from './rag/retrieve.ts';
-import type { Conversation, MessageRow, Tenant } from './types.ts';
+import type { RetrievedChunk } from './rag/retrieve.ts';
+import type { Citation, Conversation, MessageRow, Tenant } from './types.ts';
 
 export type Outcome = {
   duplicate: boolean;
@@ -13,6 +14,18 @@ export type Outcome = {
 };
 
 type HandoffReason = 'ai_requested' | 'quota' | 'trial_ended';
+
+// Referencat që sheh klienti: vetëm faqe publike të website-it (me URL), një herë
+// për dokument. Titujt e dokumenteve manuale nuk shfaqen (mund të jenë të brendshëm).
+export function citationsFor(chunks: RetrievedChunk[]): Citation[] {
+  const out: Citation[] = [];
+  for (const c of chunks) {
+    if (!c.document_url || out.some((x) => x.url === c.document_url)) continue;
+    out.push({ title: c.document_title.slice(0, 200), url: c.document_url });
+    if (out.length >= 3) break;
+  }
+  return out;
+}
 
 async function saveBotMessage(
   conversation: Conversation,
@@ -126,6 +139,7 @@ export async function handleInbound(args: {
     const retrieval = await retrieve(tenant.id, text);
     const gen = await generateReply({ tenant, history, text, chunks: retrieval.chunks });
     const topSimilarity = retrieval.chunks.reduce((max, c) => Math.max(max, c.similarity), 0);
+    const citations = citationsFor(gen.usedSources.map((n) => retrieval.chunks[n - 1]!));
 
     // 6) Ruaj përgjigjen.
     const reply = await saveBotMessage(conversation, gen.answer, {
@@ -133,9 +147,11 @@ export async function handleInbound(args: {
       model: gen.model,
       needs_human: gen.needsHuman,
       sources: gen.usedSources.map((n) => retrieval.chunks[n - 1]!.id),
+      citations,
       top_similarity: Number(topSimilarity.toFixed(4)),
       trace_id: traceId,
     });
+    reply.sources = citations;
 
     // 7) Usage ledger në Supabase = burimi i së vërtetës për kuotat. Shkruhet PARA
     //    Langfuse dhe me tokenat realë që ktheu API.
@@ -173,6 +189,9 @@ export async function handleInbound(args: {
       endedAt: new Date(),
       metadata: {
         chunks: retrieval.chunks.length,
+        chunks_dropped_low_relevance: retrieval.dropped,
+        query_embedding_cached: retrieval.cached,
+        citations: citations.length,
         top_similarity: Number(topSimilarity.toFixed(4)),
         needs_human: gen.needsHuman,
         grounded: gen.usedSources.length > 0,

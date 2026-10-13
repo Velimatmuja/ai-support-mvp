@@ -11,6 +11,7 @@ import { calls, startMocks, userJwt, USERS } from './mocks.ts';
 const REST_PORT = Number(process.env.E2E_REST_PORT);
 const MOCK_PORT = 54341;
 const APP_PORT = 54342;
+const SITE_PORT = 54343;
 const MOCK = `http://127.0.0.1:${MOCK_PORT}`;
 const APP = `http://127.0.0.1:${APP_PORT}`;
 
@@ -34,6 +35,17 @@ Object.assign(process.env, {
   WIDGET_TOKEN_SECRET: 'w'.repeat(64),
   CHANNEL_ENCRYPTION_KEY: 'ab'.repeat(32),
   APP_URL: APP,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+  // Crawler: host-et e testit drejtohen te serveri lokal (vetëm jashtë production).
+  CRAWLER_DEV_HOST_MAP: JSON.stringify({ 'alba.test': `127.0.0.1:${SITE_PORT}`, 'www.alba.test': `127.0.0.1:${SITE_PORT}`, 'beta.test': `127.0.0.1:${SITE_PORT}` }),
+  CRAWLER_MIN_DELAY_MS: '0',
+  CRAWLER_TIMEOUT_MS: '1000',
+  CRAWLER_MAX_ATTEMPTS: '2',
+  CRAWLER_RETRY_BASE_MS: '50',
+  CRAWLER_TICK_BUDGET_MS: '5000',
+  CRON_SECRET: 'cron-secret-for-e2e-tests',
+  // Embeddings e imituara (bashkësi fjalësh) kanë similarity më të ulët se Voyage.
+  KB_MIN_SIMILARITY: '0.05',
 });
 
 // ---------------------------------------------------------------------------
@@ -45,6 +57,17 @@ const ROUTES: { re: RegExp; file: string; param?: string }[] = [
   { re: /^\/api\/telegram\/([^/]+)$/, file: 'telegram/[channelId]', param: 'channelId' },
   { re: /^\/api\/channels\/telegram$/, file: 'channels/telegram' },
   { re: /^\/api\/kb\/ingest$/, file: 'kb/ingest' },
+  { re: /^\/api\/kb\/sources$/, file: 'kb/sources' },
+  { re: /^\/api\/kb\/sources\/([^/]+)\/verify$/, file: 'kb/sources/[id]/verify', param: 'id' },
+  { re: /^\/api\/kb\/sources\/([^/]+)\/sync$/, file: 'kb/sources/[id]/sync', param: 'id' },
+  { re: /^\/api\/kb\/sources\/([^/]+)\/retry$/, file: 'kb/sources/[id]/retry', param: 'id' },
+  { re: /^\/api\/kb\/sources\/([^/]+)$/, file: 'kb/sources/[id]', param: 'id' },
+  { re: /^\/api\/kb\/documents$/, file: 'kb/documents' },
+  { re: /^\/api\/kb\/documents\/([^/]+)$/, file: 'kb/documents/[id]', param: 'id' },
+  { re: /^\/api\/kb\/search$/, file: 'kb/search' },
+  { re: /^\/api\/plugin\/connect$/, file: 'plugin/connect' },
+  { re: /^\/api\/keys\/([^/]+)$/, file: 'keys/[id]', param: 'id' },
+  { re: /^\/api\/cron\/crawl$/, file: 'cron/crawl' },
   { re: /^\/api\/conversations\/([^/]+)\/reply$/, file: 'conversations/[id]/reply', param: 'id' },
 ];
 
@@ -518,6 +541,12 @@ await step('RLS përmes Data API: përdoruesi A sheh vetëm të dhënat e veta; 
   });
   assert.equal(rpc.status, 403, 'përdoruesi nuk duhet të thërrasë dot match_chunks për tenant tjetër');
 });
+
+// Website -> Knowledge Base -> RAG (crawler, indeksim, sync, plugin API).
+{
+  const { default: website } = await import('./website.ts');
+  await website({ APP, MOCK, A, B, db, call, step, calls, userJwt, USERS, SITE_PORT });
+}
 
 if (process.env.E2E_BROWSER) {
   const { browserTest } = await import('./browser.ts');
