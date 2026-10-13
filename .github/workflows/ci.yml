@@ -20,12 +20,14 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Plugin WordPress (sintaksa PHP)
+        run: for f in wp-plugin/supportbot-widget/*.php tests/wp/*.php; do php -l "$f"; done
       - name: Postgres në PATH (i parainstaluar në runner)
         run: echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
       - name: RLS / izolimi i tenant-ëve
         run: pnpm test:db
       - name: Instalo PostgREST
         run: curl -sSL https://github.com/PostgREST/postgrest/releases/download/v13.0.8/postgrest-v13.0.8-linux-static-x86-64.tar.xz | sudo tar -xJ -C /usr/local/bin
-      - name: End-to-end (API reale, shërbime të jashtme të imituara)
+      - name: End-to-end (API reale, shërbime të jashtme të imituara, crawler, plugin WP me PHP)
         run: pnpm test:e2e
       - run: pnpm build

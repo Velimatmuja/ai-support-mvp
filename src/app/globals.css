@@ -76,6 +76,7 @@ label {
 input[type='text'],
 input[type='email'],
 input[type='password'],
+input[type='number'],
 select,
 textarea {
   display: block;
@@ -602,4 +603,75 @@ input[type='color'] {
   .thread-head .back {
     display: none;
   }
+}
+
+/* Knowledge: website-i si burim njohurish */
+.source {
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.source .name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.source details {
+  margin-top: 12px;
+}
+
+.source summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+.badge.ready {
+  background: #e3f4ee;
+  border-color: #b8e0d2;
+}
+
+.badge.failed {
+  background: #fdecea;
+  border-color: #f5c2bd;
+  color: var(--danger);
+}
+
+.badge.pending,
+.badge.crawling,
+.badge.indexing {
+  background: var(--wait-bg);
+  border-color: #f3d68a;
+  color: var(--wait-ink);
+}
+
+.badge.off {
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 12px 0 4px;
+}
+
+.stats dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 0;
+  font-weight: 600;
 }

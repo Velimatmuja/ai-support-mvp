@@ -5,7 +5,8 @@ import { ApiError, clientIp, errorResponse, isUuid, json, preflight, readJson } 
 import { handleInbound } from '../../../../lib/pipeline.ts';
 import { enforce } from '../../../../lib/ratelimit.ts';
 import { admin } from '../../../../lib/supabase/admin.ts';
-import type { Conversation } from '../../../../lib/types.ts';
+import { publicMessage } from '../../../../lib/types.ts';
+import type { Conversation, MessageRow } from '../../../../lib/types.ts';
 import { bearer, tenantForWidget } from '../../../../lib/widget.ts';
 
 export const dynamic = 'force-dynamic';
@@ -123,7 +124,7 @@ export async function GET(req: Request): Promise<Response> {
 
     const { data, error } = await db
       .from('messages')
-      .select('id, role, content, created_at')
+      .select('id, role, content, created_at, metadata')
       .eq('conversation_id', claims.c)
       .eq('tenant_id', tenant.id)
       .in('role', ['assistant', 'agent'])
@@ -132,7 +133,7 @@ export async function GET(req: Request): Promise<Response> {
       .limit(50);
     if (error) throw new Error(`messages: ${error.message}`);
 
-    return json({ status: conv.status, messages: data ?? [] }, 200, true);
+    return json({ status: conv.status, messages: ((data ?? []) as MessageRow[]).map(publicMessage) }, 200, true);
   } catch (e) {
     return errorResponse(e, true);
   }

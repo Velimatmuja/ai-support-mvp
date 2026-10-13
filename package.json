@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test \"tests/unit/*.test.ts\"",
     "test:db": "bash scripts/local-db/run.sh",
-    "test:e2e": "bash scripts/e2e.sh"
+    "test:e2e": "bash scripts/e2e.sh",
+    "worker": "node scripts/crawl-worker.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

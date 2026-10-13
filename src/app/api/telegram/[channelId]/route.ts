@@ -119,7 +119,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ channelId: str
     });
     if (outcome.duplicate || !outcome.reply) return json({ ok: true });
 
-    await sendText(botToken, chatId, outcome.reply.content);
+    // Telegram: tekst i thjeshtë, burimet si lidhje në fund.
+    const sources = (outcome.reply.sources ?? []).map((c) => c.url);
+    await sendText(botToken, chatId, sources.length ? `${outcome.reply.content}\n\n${sources.join('\n')}` : outcome.reply.content);
   } catch (e) {
     console.error('[telegram] përpunimi dështoi', { channel: channelId, update: update.update_id }, e);
   }

@@ -56,6 +56,8 @@
     '.m.user{align-self:flex-end;background:var(--c);color:#fff;border-bottom-right-radius:4px}',
     '.m.bot{align-self:flex-start;background:#fff;border:1px solid #e5e7eb;border-bottom-left-radius:4px}',
     '.m.err{align-self:center;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:13px}',
+    '.src{display:flex;flex-direction:column;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid #e5e7eb;font-size:12.5px}',
+    '.src a{color:var(--c);text-decoration:underline;overflow-wrap:anywhere}',
     '.typing{align-self:flex-start;color:#6b7280;font-size:13px;padding:2px 6px}',
     '.form{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;background:#fff}',
     '.in{flex:1;border:1px solid #d1d5db;border-radius:10px;padding:10px 12px;font:inherit;resize:none;height:42px;max-height:110px;outline:none;color:#111827;background:#fff}',
@@ -113,7 +115,24 @@
     send.textContent = state.config.send;
   }
 
-  function addMessage(role, text, id) {
+  // Burimet vijnë nga serveri, por URL-ja kontrollohet sërish: vetëm http(s), pa javascript:.
+  function addSources(node, sources) {
+    if (!sources || !sources.length) return;
+    var box = el('div', 'src');
+    sources.slice(0, 3).forEach(function (s) {
+      var u;
+      try { u = new URL(s.url); } catch (e) { return; }
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') return;
+      var a = el('a', null, s.title || u.hostname);
+      a.href = u.href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer nofollow';
+      box.appendChild(a);
+    });
+    if (box.childNodes.length) node.appendChild(box);
+  }
+
+  function addMessage(role, text, id, sources) {
     if (id) {
       if (state.seen[id]) return;
       state.seen[id] = true;
@@ -121,6 +140,7 @@
     }
     var cls = role === 'user' ? 'm user' : role === 'err' ? 'm err' : 'm bot';
     var node = el('div', cls, text);
+    if (role === 'bot') addSources(node, sources);
     list.appendChild(node);
     list.scrollTop = list.scrollHeight;
     return node;
@@ -154,7 +174,7 @@
       applyConfig();
       state.status = data.status;
       if (data.messages && data.messages.length) {
-        data.messages.forEach(function (m) { addMessage(m.role === 'user' ? 'user' : 'bot', m.content, m.id); });
+        data.messages.forEach(function (m) { addMessage(m.role === 'user' ? 'user' : 'bot', m.content, m.id, m.sources); });
       } else {
         addMessage('bot', state.config.welcome);
       }
@@ -184,7 +204,7 @@
     api('POST', '/message', { key: KEY, text: text, clientId: uuid() }).then(function (data) {
       if (data.token) saveToken(data.token);
       state.status = data.status;
-      if (data.reply) addMessage('bot', data.reply.content, data.reply.id);
+      if (data.reply) addMessage('bot', data.reply.content, data.reply.id, data.reply.sources);
     }).catch(function (err) {
       addMessage('err', (err.data && err.data.message) || state.config.errorText);
     }).then(function () {
@@ -203,7 +223,7 @@
     if (!state.open || !state.token || document.hidden || state.sending) return schedule();
     api('GET', '/message?key=' + encodeURIComponent(KEY) + '&after=' + state.lastId).then(function (data) {
       state.status = data.status;
-      (data.messages || []).forEach(function (m) { addMessage('bot', m.content, m.id); });
+      (data.messages || []).forEach(function (m) { addMessage('bot', m.content, m.id, m.sources); });
     }).catch(function (err) {
       if (err.status === 401) { state.token = null; try { localStorage.removeItem(STORE); } catch (e) { /* injoro */ } }
     }).then(schedule);

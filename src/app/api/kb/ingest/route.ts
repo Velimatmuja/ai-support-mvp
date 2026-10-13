@@ -1,4 +1,4 @@
-import { requireOwner, requireUser } from '../../../../lib/auth.ts';
+import { requireActor, requireOwner } from '../../../../lib/auth.ts';
 import { ApiError, errorResponse, json, readJson } from '../../../../lib/errors.ts';
 import { ingestDocument } from '../../../../lib/rag/ingest.ts';
 import { enforce } from '../../../../lib/ratelimit.ts';
@@ -6,13 +6,13 @@ import { enforce } from '../../../../lib/ratelimit.ts';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// POST /api/kb/ingest  { title, content }   Authorization: Bearer <access token>
+// POST /api/kb/ingest  { title, content }   Authorization: Bearer <access token | ak_...>
 // Tekst -> chunks -> embeddings -> document_chunks. tenant_id vjen nga përdoruesi i
-// verifikuar, jo nga body. MVP: vetëm tekst i ngjitur (FAQ, politika, çmime);
-// PDF/URL shtohen më vonë si hapa që prodhojnë tekst para kësaj rruge.
+// verifikuar ose nga çelësi API, jo nga body. Burim opsional (FAQ, politika, çmime)
+// krahas faqeve të website-it (/api/kb/sources).
 export async function POST(req: Request): Promise<Response> {
   try {
-    const user = await requireUser(req);
+    const user = await requireActor(req, 'kb');
     requireOwner(user);
     await enforce(`kb:ingest:${user.tenantId}`, 30, 3600);
 

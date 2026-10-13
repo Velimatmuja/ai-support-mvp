@@ -15,14 +15,18 @@ export class ApiCallError extends Error {
 
 // Thirrje te API routes të aplikacionit me tokenin e sesionit aktual.
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  return apiRequest<T>('POST', path, body);
+}
+
+export async function apiRequest<T>(method: 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
   const { data } = await supabase().auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new ApiCallError(401, 'unauthorized', 'unauthorized');
 
   const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
+    method,
+    headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), authorization: `Bearer ${token}` },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
   if (!res.ok) {
